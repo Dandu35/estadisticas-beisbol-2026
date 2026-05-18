@@ -1,0 +1,35 @@
+name: Actualizar Estadisticas de Beisbol
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Se ejecuta automáticamente todas las noches a las 2:00 AM (Hora UTC)
+  workflow_dispatch: # Activa un botón en la web de GitHub para actualizar a mano cuando quieras
+
+permissions:
+  contents: write # Permiso clave para que el robot pueda modificar el archivo datos.json
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clonar repositorio
+      uses: actions/checkout@v3
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Instalar librerías necesarias
+      run: |
+        pip install requests beautifulsoup4
+
+    - name: Ejecutar el script extractor
+      run: python scraper.py
+
+    - name: Guardar los nuevos datos en el repositorio
+      run: |
+        git config --global user.name "GitHub Action Robot"
+        git config --global user.email "action@github.com"
+        git add datos.json
+        git diff-index --quiet HEAD || (git commit -m "Actualización automática de estadísticas de la liga" && git push)
