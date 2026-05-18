@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas Liga Béisbol 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col items-center p-4 sm:p-6">
+
+    <div class="w-full max-w-5xl bg-slate-800 rounded-xl shadow-2xl p-6 mt-4 border border-slate-700">
+        <h1 class="text-3xl font-extrabold text-center text-amber-400 mb-6 flex justify-center items-center gap-2">
+            ⚾ Buscador de Estadísticas 2026
+        </h1>
+        
+        <div class="mb-6">
+            <input type="text" id="buscador" placeholder="Buscar por apellido o nombre del jugador..." 
+                   class="w-full px-4 py-3 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 text-lg shadow-inner">
+        </div>
+
+        <div class="overflow-x-auto rounded-lg border border-slate-700">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-950 text-amber-400 uppercase text-xs sm:text-sm font-bold tracking-wider border-b border-slate-700">
+                        <th class="py-3.5 px-6">Jugador</th>
+                        <th class="py-3.5 px-4 text-center">Partidos</th>
+                        <th class="py-3.5 px-4 text-center">AB (Turnos)</th>
+                        <th class="py-3.5 px-4 text-center">H (Hits)</th>
+                        <th class="py-3.5 px-4 text-center">R (Carreras)</th>
+                        <th class="py-3.5 px-4 text-center">RBI (Imp.)</th>
+                        <th class="py-3.5 px-4 text-center">BB</th>
+                        <th class="py-3.5 px-4 text-center">SO</th>
+                        <th class="py-3.5 px-6 text-center font-extrabold text-emerald-400">AVG</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-cuerpo" class="divide-y divide-slate-700 text-slate-300 text-sm">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let datosJugadores = {};
+
+        async function cargarDatos() {
+            try {
+                // Hacemos que cargue el JSON local del repositorio
+                const response = await fetch('datos.json');
+                datosJugadores = await response.json();
+                renderizarTabla(datosJugadores);
+            } catch (error) {
+                console.error("Error cargando los datos:", error);
+            }
+        }
+
+        function renderizarTabla(datos) {
+            const cuerpo = document.getElementById('tabla-cuerpo');
+            cuerpo.innerHTML = '';
+
+            // Si no hay resultados
+            if (Object.keys(datos).length === 0) {
+                cuerpo.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-500">No se encontraron jugadores</td></tr>`;
+                return;
+            }
+
+            for (const [nombre, stats] of Object.entries(datos)) {
+                // Cálculo matemático del AVG (Hits / Veces al bate)
+                const avgNum = stats.ab > 0 ? (stats.h / stats.ab) : 0;
+                let avgText = ".000";
+                if (avgNum === 1) {
+                    avgText = "1.000";
+                } else if (avgNum > 0) {
+                    avgText = avgNum.toFixed(3).substring(1); // Quita el "0" inicial para formato béisbol (.333)
+                }
+                
+                const fila = `
+                    <tr class="hover:bg-slate-750 transition-colors">
+                        <td class="py-3.5 px-6 font-semibold text-white whitespace-nowrap">${nombre}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.partidos}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.ab}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.h}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.r}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.rbi}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.bb}</td>
+                        <td class="py-3.5 px-4 text-center">${stats.so}</td>
+                        <td class="py-3.5 px-6 text-center font-bold text-emerald-400 bg-slate-900/30">${avgText}</td>
+                    </tr>
+                `;
+                cuerpo.innerHTML += fila;
+            }
+        }
+
+        // Filtro del buscador en tiempo real
+        document.getElementById('buscador').addEventListener('input', (e) => {
+            const termino = e.target.value.toLowerCase();
+            const filtrados = {};
+            
+            for (const [nombre, stats] of Object.entries(datosJugadores)) {
+                if (nombre.toLowerCase().includes(termino)) {
+                    filtrados[nombre] = stats;
+                }
+            }
+            renderizarTabla(filtrados);
+        });
+
+        window.onload = cargarDatos;
+    </script>
+</body>
+</html>
